@@ -1,69 +1,101 @@
-# Word 转 PDF 桌面工具
+# ToPDF
 
-用 Tkinter 创建的 Windows 桌面应用，通过本机 Microsoft Word 批量转换 `.doc`、`.docx`。
+一个简单的 Windows 桌面工具，用于批量将 Word 文档转换为 PDF。
 
-## 环境
+选择文件夹，点击开始转换，程序会在后台调用 Microsoft Word，将生成的 PDF 保存到桌面上的新文件夹。
 
-- Windows 10/11，安装桌面版 Microsoft Word，并先手动打开一次完成激活和首次启动。
-- 源码运行需要 Python 3.10 或更高版本（安装时保留 Tcl/Tk）。Tkinter 无需另行 pip 安装。
-- exe 使用者不需要安装 Python，但仍然需要 Microsoft Word。WPS 不适用本程序。
+## 下载与使用
 
-## 运行（PowerShell）
+前往 [Releases 页面](https://github.com/promisetsuri/ToPDF/releases)，下载发布附件中的 `WordToPDF.exe`。
 
-在项目文件夹打开终端。已有 `.venv` 时跳过创建步骤。
+1. 双击 `WordToPDF.exe` 打开程序。
+2. 点击 **选择文件夹**，或直接输入 Word 文档所在的文件夹地址。
+3. 如需转换子文件夹中的文档，勾选 **包含子文件夹**。
+4. 点击 **开始转换**，在窗口中查看进度和转换结果。
+5. 完成后点击 **打开输出文件夹**，查看 PDF 和转换日志。
+
+> 使用 exe 无需安装 Python，但电脑必须安装桌面版 Microsoft Word，并已完成激活和首次启动。本程序不使用 WPS 转换。
+
+## 功能
+
+- 批量转换 `.doc` 和 `.docx` 文件。
+- 支持包含子文件夹，并保留原有目录结构。
+- 每次任务在桌面创建独立输出文件夹，避免覆盖之前的结果。
+- 同名 `.doc` 和 `.docx` 生成不同名称的 PDF。
+- 自动跳过以 `~$` 开头的 Word 临时文件。
+- 后台转换，窗口显示进度和错误；单个文件失败后继续处理其他文件。
+- 支持在当前文件处理结束后停止任务。
+- 尝试关闭每个文档和本次任务创建的 Word 实例。
+- 禁用文档宏，不修改源文档。
+
+## 输出位置
+
+PDF 默认保存到 Windows 桌面的新文件夹中，例如：
+
+```text
+桌面/
+└── Word转PDF_20261013_132000/
+    ├── 文档A.pdf
+    ├── 文档B.pdf
+    ├── 子文件夹/
+    │   └── 文档C.pdf
+    └── 转换日志.txt
+```
+
+程序通过 Windows 获取实际桌面路径，支持重定向到 OneDrive 的桌面。`转换日志.txt` 包含任务统计和错误信息。
+
+## 从源码运行
+
+需要 Windows、Python 3.10 或更高版本，以及桌面版 Microsoft Word。Python 安装时需保留 Tcl/Tk 支持；Tkinter 不需要单独通过 pip 安装。
+
+下载或克隆仓库后，在项目目录打开 PowerShell：
 
 ```powershell
+git clone https://github.com/promisetsuri/ToPDF.git
+cd ToPDF
 py -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe topdf.py
 ```
 
-选择或粘贴文件夹地址，点击“开始转换”。默认只处理该文件夹中的 Word 文件；勾选“包含子文件夹”可递归处理并保留目录结构。跳过 Word 临时锁文件 `~$...`。
+如果已经下载并进入项目目录，跳过前两条命令；已有虚拟环境时跳过创建步骤。请逐条执行命令。
 
-每次在 Windows 实际桌面（支持 OneDrive 重定向）创建独立输出文件夹。同名 `.doc` 和 `.docx` 生成不同 PDF，避免覆盖。窗口显示进度和错误，输出目录内保存 `转换日志.txt`。单个文件失败后继续处理其他文件。
+## 打包 exe
 
-“停止”会等待当前文件结束；转换中关闭窗口会请求停止，任务结束后再关闭窗口。程序使用独立的 Word 实例，后台线程初始化 COM，文档在 finally 中关闭，任务结束时退出 Word，且禁用文档宏。
-
-## 打包成可双击的 exe
-
-在 Windows 项目目录、同一个虚拟环境中运行：
+在 Windows 项目目录中执行：
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install --upgrade pyinstaller
 .\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean --onefile --windowed --name WordToPDF --hidden-import=win32timezone topdf.py
 ```
 
-生成文件为 `dist\WordToPDF.exe`。双击出现窗口，可复制给安装了 Microsoft Word 的 Windows 用户。打包后应在目标电脑测试普通文档、中文路径和错误文档。若 exe 启动异常，重新打包时去掉 `--windowed`，从终端运行查看错误。
+生成的程序位于 `dist\WordToPDF.exe`。打包后请在目标电脑测试；Microsoft Word 不会随 exe 一起打包。
 
-参数说明：[PyInstaller 官方文档](https://pyinstaller.org/en/stable/usage.html)。Word 导出接口：[Microsoft 官方文档](https://learn.microsoft.com/en-us/office/vba/api/word.document.exportasfixedformat)。
+## 常见问题
 
-## 上传 GitHub：网页方式
+### 提示 `No module named win32com`
 
-1. 登录 GitHub，点击右上角 `+` → `New repository`，填写 `word-to-pdf`。根据需要选择 Public 或 Private，再点击 `Create repository`。
-2. 在仓库页选择 `uploading an existing file`（已有仓库用 `Add file` → `Upload files`）。上传 `topdf.py`、`requirements.txt`、`README.md`、`.gitignore`。隐藏的 `.gitignore` 可用网页 `Add file` → `Create new file` 创建并粘贴内容。
-3. 填写提交说明，例如 `Add Word to PDF desktop app`，点击 `Commit changes`。
-4. exe 可在仓库的 `Releases` → `Create a new release` 中作为附件发布，例如标签 `v1.0.0`。不上传 `.venv`、`build`、`dist` 文件夹或自己的文档。
-
-## 上传 GitHub：Git 命令方式
-
-先安装 Git，在 GitHub 创建一个空仓库（不要勾选自动创建 README），再在本项目目录运行。将下面的 `YOUR_USERNAME` 和仓库名替换为自己的值。
+依赖可能安装到了另一个 Python 环境。使用同一个虚拟环境安装和运行：
 
 ```powershell
-git init
-git add topdf.py requirements.txt README.md .gitignore
-git commit -m "Add Word to PDF desktop app"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/word-to-pdf.git
-git push -u origin main
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe topdf.py
 ```
 
-首次提交若要求身份设置，按 Git 的提示填写自己的用户名和邮箱；首次推送按提示在浏览器登录 GitHub。不要把密码或令牌写进项目。以上命令用于新项目，已有仓库请沿用原来的远程地址。
+### Word 无法启动或部分文档转换失败
 
-## 故障排查和边界
+先确认 Microsoft Word 能手动正常打开。密码文档不支持输入密码；损坏文档、受保护视图或需要交互确认的文件可能无法转换。查看窗口中的错误和输出目录中的 `转换日志.txt`。
 
-- `No module named win32com`：用上面的 `.venv\Scripts\python.exe` 安装依赖并运行，不要混用解释器。
-- Word 无法启动：确认安装的是 Microsoft Word 桌面版，完成激活后重新尝试。
-- 密码文档会按失败记录，本程序不提供密码输入。损坏、受保护视图或需要交互确认的文件可能无法转换。
-- 程序在正常成功、异常及停止路径中尝试关闭文档和专用 Word 实例。若 Word 本身无响应或弹出模态对话框，COM 调用可能一直等待；本版本没有强制超时终止功能。停止按钮无法中断正在执行的 COM 调用。可检查 Word 提示或任务管理器中的后台 Word 进程，先确认没有其他待保存文档再处理。
-- PDF 外观受本机字体、Word 版本和文档内容影响。
-- 发布为开源项目时，可自行选择并添加 LICENSE 文件。本项目未替你选择许可证。
+### 点击停止后没有立即结束
+
+停止操作会等待当前文件的 Word 调用完成。如果 Word 无响应或被对话框阻塞，程序可能一直等待；本版本没有强制超时终止功能。检查 Word 是否有待处理提示。
+
+### PDF 排版与预期不同
+
+转换结果受本机 Word 版本、字体及文档内容影响。可先用 Word 手动打开原文件，检查排版和字体。
+
+## 反馈
+
+欢迎通过 [Issues](https://github.com/promisetsuri/ToPDF/issues) 反馈问题。请说明 Windows 和 Word 版本、操作步骤，以及窗口或日志中的错误信息。
+
+提交截图或示例文档前，请移除个人信息和敏感内容。
